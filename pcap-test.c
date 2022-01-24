@@ -37,7 +37,10 @@ void printData(const u_char* data, uint32_t hdr_size, uint32_t total_len) {
         printf("- no payload\n");
     }else{
         printf("-data = ");
-        for(int i = 0; i < 8; i++){
+
+        int count = total_len - hdr_size;
+        if (count > 8 ) count = 8;
+        for(int i = 0; i < count; i++){
             printf("%02x ",data[i]);
         }
         printf("\n");
@@ -94,14 +97,13 @@ int main(int argc, char* argv[]) {
 		}
         ethrHdr = (struct libnet_ethernet_hdr*) packet;
 
-        if (ntohs(ethrHdr->ether_type) == ETHERTYPE_IP) {
-            IPHdr = (struct libnet_ipv4_hdr*) (packet + sizeof(struct libnet_ethernet_hdr));
-        }//else continue;
+        if (ntohs(ethrHdr->ether_type) != ETHERTYPE_IP) continue;
+        IPHdr = (struct libnet_ipv4_hdr*) (packet + sizeof(struct libnet_ethernet_hdr));
+        
 
-        if (IPHdr->ip_p == 6) {
-            TCPHdr = (struct libnet_tcp_hdr*) (packet + sizeof(struct libnet_ethernet_hdr) + sizeof(struct libnet_ipv4_hdr));
-        }else continue;
-
+        if (IPHdr->ip_p == 6) continue;
+        TCPHdr = (struct libnet_tcp_hdr*) (packet + sizeof(struct libnet_ethernet_hdr) + (IPHdr->ip_hl)*4);
+       
         hdr_len = sizeof(struct libnet_ethernet_hdr) + (IPHdr->ip_hl)*4 + (TCPHdr->th_off)*4;
         data_offset = (u_char *) (packet + hdr_len);
 
